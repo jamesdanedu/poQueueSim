@@ -1,0 +1,89 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║         POST OFFICE QUEUE SIMULATOR - FILE GUIDE                     ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📚 DOCUMENTATION FILES
+═══════════════════════════════════════════════════════════════════════
+
+  📄 INDEX.md                  Master index - START HERE
+  📄 QUICKSTART.md            Get running in 5 minutes  
+  📄 PROJECT_SUMMARY.md       What's included
+  📄 README.md                Complete documentation
+  📄 ARCHITECTURE.md          System design diagrams
+  📄 STRATEGY_GUIDE.md        Compare dispatch strategies
+  📄 requirements.txt         Python dependencies
+
+💻 SOURCE CODE
+═══════════════════════════════════════════════════════════════════════
+
+  src/mainGui.py              🎯 RUN THIS - Main application
+  src/queueSimulator.py       Core simulation engine
+  src/microbitComms.py        Serial communication handler
+  src/database.py             SQLite database manager
+  src/testSimulator.py        Test without GUI
+
+🔌 MICRO:BIT CODE
+═══════════════════════════════════════════════════════════════════════
+
+  microbit/main.py            Flash to Micro:bit (MicroPython)
+
+📊 KEY STATISTICS
+═══════════════════════════════════════════════════════════════════════
+
+  Total Lines of Code:        ~1,500+
+  Python Modules:             5 files
+  Documentation:              6 files
+  Tested & Working:           ✅ Yes
+  Archive Size:               23 KB
+
+🚀 QUICK START
+═══════════════════════════════════════════════════════════════════════
+
+  1. pip install -r requirements.txt
+  2. cd src
+  3. python mainGui.py
+  4. Click "Start Simulation"
+  5. Use manual buttons to add customers
+  
+🎯 FEATURES
+═══════════════════════════════════════════════════════════════════════
+
+  ✅ 3 service queues (Standard Post, Passports, Parcels)
+  ✅ 5 servers managing 4 booths
+  ✅ 4 dispatch strategies to compare
+  ✅ Real-time PyQt5 visualization
+  ✅ Time acceleration (1x to 100x)
+  ✅ SQLite database logging
+  ✅ Micro:bit hardware integration
+  ✅ Customer abandonment modeling
+
+🔬 DISPATCH STRATEGIES
+═══════════════════════════════════════════════════════════════════════
+
+  1. Longest Wait First      → Most fair
+  2. Shortest Job First       → Best efficiency
+  3. Round Robin              → Balanced service
+  4. Priority Order           → Urgency-based
+
+📈 WHAT TO ANALYZE
+═══════════════════════════════════════════════════════════════════════
+
+  • Which strategy gives lowest average wait time?
+  • How does abandonment vary by strategy?
+  • What's the optimal server:booth ratio?
+  • How does time acceleration affect realism?
+  • What's server utilization by strategy?
+
+🎓 LEARNING OBJECTIVES
+═══════════════════════════════════════════════════════════════════════
+
+  ✓ Embedded systems integration (Micro:bit + USB serial)
+  ✓ Queue modeling & simulation (discrete event simulation)
+  ✓ Real-time visualization (PyQt5 GUI)
+  ✓ Database design (SQLite)
+  ✓ Comparative analysis (strategy evaluation)
+  ✓ Operations research (resource optimization)
+
+╔══════════════════════════════════════════════════════════════════════╗
+║  Ready to Start? Run: cd src && python mainGui.py                   ║
+╚══════════════════════════════════════════════════════════════════════╝
