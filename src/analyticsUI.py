@@ -1,24 +1,25 @@
 """
-PyQt5 Analytics Window
-Embeds the analytics dashboard into the main queue management UI
-Can be opened from the main window with a button/menu action
+Analytics UI Module (UPDATED)
+PyQt5 Analytics Window with Little's Law verification and wellbeing metrics
+Embeds the enhanced analytics dashboard into the queue management UI
 """
 
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLabel, QTabWidget, QTextEdit,
-                             QScrollArea, QGroupBox, QGridLayout, QMessageBox)
+                             QScrollArea, QGroupBox, QGridLayout, QMessageBox,
+                             QFrame)
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import Qt, QUrl, QTimer
-from PyQt5.QtGui import QFont
+from PyQt5.QtCore import Qt, QUrl, QTimer, pyqtSignal
+from PyQt5.QtGui import QFont, QPalette, QColor
 import os
 import tempfile
-from analyticsDashboard import QueueAnalyticsDashboard
+from analyticsDashboard import QueueAnalyticsDashboard  # Updated dashboard
 
 
 class AnalyticsWindow(QMainWindow):
     """
     Analytics Dashboard Window for Queue Management System
-    Displays interactive charts and KPIs in a PyQt5 window
+    NOW INCLUDES: Little's Law verification and wellbeing metrics
     """
     
     def __init__(self, db_path='queue_analysis.db', parent=None):
@@ -31,216 +32,452 @@ class AnalyticsWindow(QMainWindow):
         self.load_analytics()
     
     def init_ui(self):
-        """Initialize the user interface"""
-        self.setWindowTitle('Queue Analytics Dashboard')
+        """Initialize the enhanced user interface"""
+        self.setWindowTitle('📊 Queue Analytics Dashboard')
         self.setGeometry(100, 100, 1400, 900)
+        
+        # Enhanced styling
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f8f9fa;
+            }
+            QTabWidget::pane {
+                border: 1px solid #dee2e6;
+                background: white;
+                border-radius: 8px;
+            }
+            QTabBar::tab {
+                background: #e9ecef;
+                padding: 12px 20px;
+                margin-right: 2px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                font-weight: bold;
+            }
+            QTabBar::tab:selected {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            QTabBar::tab:hover:!selected {
+                background: #adb5bd;
+            }
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #dee2e6;
+                border-radius: 8px;
+                margin: 10px 0;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                padding: 0 5px;
+                color: #495057;
+            }
+        """)
         
         # Create central widget and main layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(15, 15, 15, 15)
         
-        # Header
+        # Enhanced header
         header = self.create_header()
         main_layout.addWidget(header)
         
         # Tab widget for different analytics views
         self.tabs = QTabWidget()
-        self.tabs.setStyleSheet("""
-            QTabWidget::pane {
-                border: 1px solid #cccccc;
-                background: white;
-            }
-            QTabBar::tab {
-                background: #f0f0f0;
-                padding: 10px 20px;
-                margin-right: 2px;
-            }
-            QTabBar::tab:selected {
-                background: #667eea;
-                color: white;
-            }
-        """)
         
-        # Create tabs
+        # Create all tabs (existing + new)
         self.create_kpi_tab()
         self.create_trends_tab()
-        self.create_demand_tab()
         self.create_strategy_tab()
-        self.create_utilization_tab()
-        self.create_waittime_tab()
+        self.create_littles_law_tab()      # NEW TAB
+        self.create_wellbeing_tab()        # NEW TAB
+        self.create_advanced_insights_tab() # NEW TAB
         
         main_layout.addWidget(self.tabs)
         
-        # Footer with action buttons
-        footer = self.create_footer()
-        main_layout.addWidget(footer)
-        
         # Status bar
-        self.statusBar().showMessage('Ready to load analytics')
+        self.statusBar().showMessage('Enhanced analytics dashboard ready')
+        self.statusBar().setStyleSheet("background-color: #e9ecef; padding: 5px;")
     
     def create_header(self):
-        """Create header section with title and refresh button"""
-        header_widget = QWidget()
-        header_widget.setStyleSheet("""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                       stop:0 #667eea, stop:1 #764ba2);
-            color: white;
-            border-radius: 8px;
-            padding: 10px;
+        """Create enhanced header with controls"""
+        header_frame = QFrame()
+        header_frame.setStyleSheet("""
+            QFrame {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 12px;
+                padding: 20px;
+            }
         """)
+        header_layout = QHBoxLayout(header_frame)
         
-        header_layout = QHBoxLayout(header_widget)
+        # Title section
+        title_layout = QVBoxLayout()
         
-        # Title
-        title_label = QLabel('📊 Queue Management Analytics Dashboard')
-        title_font = QFont('Arial', 18, QFont.Bold)
-        title_label.setFont(title_font)
-        header_layout.addWidget(title_label)
+        title_label = QLabel('📊 Queue Analytics Dashboard')
+        title_label.setStyleSheet("color: white; font-size: 24px; font-weight: bold;")
+        title_layout.addWidget(title_label)
         
+        subtitle_label = QLabel('Performance Analysis • Little\'s Law Verification • Wellbeing Metrics')
+        subtitle_label.setStyleSheet("color: #e3f2fd; font-size: 14px;")
+        title_layout.addWidget(subtitle_label)
+        
+        header_layout.addLayout(title_layout)
         header_layout.addStretch()
         
-        # Refresh button
-        refresh_btn = QPushButton('🔄 Refresh Data')
+        # Control buttons
+        controls_layout = QVBoxLayout()
+        
+        refresh_btn = QPushButton('🔄 Refresh Analytics')
         refresh_btn.setStyleSheet("""
             QPushButton {
-                background: white;
-                color: #667eea;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
+                background: rgba(255,255,255,0.2);
+                color: white;
+                border: 2px solid rgba(255,255,255,0.3);
+                padding: 8px 16px;
+                border-radius: 6px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background: #f0f0f0;
+                background: rgba(255,255,255,0.3);
             }
         """)
         refresh_btn.clicked.connect(self.load_analytics)
-        header_layout.addWidget(refresh_btn)
+        controls_layout.addWidget(refresh_btn)
         
-        return header_widget
-    
-    def create_footer(self):
-        """Create footer with action buttons"""
-        footer_widget = QWidget()
-        footer_layout = QHBoxLayout(footer_widget)
-        
-        # Export button
-        export_btn = QPushButton('💾 Export All Analytics')
+        export_btn = QPushButton('📈 Export Report')
+        export_btn.setStyleSheet(refresh_btn.styleSheet())
         export_btn.clicked.connect(self.export_analytics)
-        footer_layout.addWidget(export_btn)
+        controls_layout.addWidget(export_btn)
         
-        # Open in browser button
-        browser_btn = QPushButton('🌐 Open in Browser')
-        browser_btn.clicked.connect(self.open_in_browser)
-        footer_layout.addWidget(browser_btn)
+        header_layout.addLayout(controls_layout)
         
-        footer_layout.addStretch()
-        
-        # Close button
-        close_btn = QPushButton('✖ Close')
-        close_btn.clicked.connect(self.close)
-        footer_layout.addWidget(close_btn)
-        
-        return footer_widget
+        return header_frame
     
     def create_kpi_tab(self):
-        """Create KPI summary tab"""
+        """Create enhanced KPI overview tab"""
         kpi_widget = QWidget()
         kpi_layout = QVBoxLayout(kpi_widget)
         
-        # Title
-        title = QLabel('Key Performance Indicators')
-        title.setFont(QFont('Arial', 16, QFont.Bold))
-        title.setStyleSheet('color: #667eea; margin: 10px;')
-        kpi_layout.addWidget(title)
+        # Add summary info
+        summary_label = QLabel("📊 <b>Key Performance Indicators</b><br>Essential metrics including new academic insights")
+        summary_label.setStyleSheet("background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 15px;")
+        summary_label.setWordWrap(True)
+        kpi_layout.addWidget(summary_label)
         
-        # KPI Grid
-        self.kpi_grid = QGridLayout()
-        kpi_layout.addLayout(self.kpi_grid)
+        # Create scrollable area for KPIs
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("border: none;")
         
-        kpi_layout.addStretch()
+        scroll_widget = QWidget()
+        self.kpi_grid = QGridLayout(scroll_widget)
+        self.kpi_grid.setSpacing(15)
         
-        self.tabs.addTab(kpi_widget, '📊 KPI Summary')
+        scroll_area.setWidget(scroll_widget)
+        kpi_layout.addWidget(scroll_area)
+        
+        self.tabs.addTab(kpi_widget, '📈 KPI Overview')
     
     def create_trends_tab(self):
-        """Create performance trends tab with embedded chart"""
+        """Create performance trends tab"""
         trends_widget = QWidget()
         trends_layout = QVBoxLayout(trends_widget)
         
-        # Web view for Plotly chart
-        self.trends_view = QWebEngineView()
-        trends_layout.addWidget(self.trends_view)
+        # Info panel
+        info_label = QLabel("📈 <b>Performance Trends</b><br>Analysis of queue performance over time")
+        info_label.setStyleSheet("background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;")
+        info_label.setWordWrap(True)
+        trends_layout.addWidget(info_label)
         
-        self.tabs.addTab(trends_widget, '📈 Performance Trends')
-    
-    def create_demand_tab(self):
-        """Create hourly demand heatmap tab"""
-        demand_widget = QWidget()
-        demand_layout = QVBoxLayout(demand_widget)
+        # Charts container
+        charts_widget = QWidget()
+        charts_layout = QVBoxLayout(charts_widget)
+        
+        self.trends_view = QWebEngineView()
+        charts_layout.addWidget(self.trends_view)
         
         self.demand_view = QWebEngineView()
-        demand_layout.addWidget(self.demand_view)
+        charts_layout.addWidget(self.demand_view)
         
-        self.tabs.addTab(demand_widget, '🔥 Hourly Demand')
+        trends_layout.addWidget(charts_widget)
+        
+        self.tabs.addTab(trends_widget, '📈 Performance Trends')
     
     def create_strategy_tab(self):
         """Create strategy comparison tab"""
         strategy_widget = QWidget()
         strategy_layout = QVBoxLayout(strategy_widget)
         
+        # Info panel
+        info_label = QLabel("⚖️ <b>Strategy Comparison</b><br>Compare dispatch strategies across multiple metrics")
+        info_label.setStyleSheet("background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 15px;")
+        info_label.setWordWrap(True)
+        strategy_layout.addWidget(info_label)
+        
         self.strategy_view = QWebEngineView()
         strategy_layout.addWidget(self.strategy_view)
         
-        self.tabs.addTab(strategy_widget, '⚖️ Strategy Comparison')
+        self.tabs.addTab(strategy_widget, '⚖️ Strategy Analysis')
     
-    def create_utilization_tab(self):
-        """Create server utilization analysis tab"""
-        util_widget = QWidget()
-        util_layout = QVBoxLayout(util_widget)
+    def create_littles_law_tab(self):
+        """Create Little's Law verification tab (NEW)"""
+        littles_widget = QWidget()
+        littles_layout = QVBoxLayout(littles_widget)
         
+        # Theory explanation
+        theory_group = QGroupBox("📐 Little's Law: L = λW")
+        theory_layout = QVBoxLayout(theory_group)
+        
+        theory_label = QLabel("""
+        <b>Little's Law</b> is a fundamental theorem in queueing theory:<br><br>
+        <b>L = λW</b>, where:<br>
+        • <b>L</b> = Average number of customers in the system (queue length)<br>
+        • <b>λ</b> = Average arrival rate (customers per unit time)<br>
+        • <b>W</b> = Average time a customer spends in the system<br><br>
+        <em>This verification checks how well our simulation follows this theoretical relationship.</em>
+        """)
+        theory_label.setStyleSheet("background: #f8f9fa; padding: 15px; border-radius: 6px; line-height: 1.4;")
+        theory_label.setWordWrap(True)
+        theory_layout.addWidget(theory_label)
+        
+        littles_layout.addWidget(theory_group)
+        
+        # Results summary
+        self.littles_results_label = QLabel("Loading Little's Law verification...")
+        self.littles_results_label.setStyleSheet("""
+            background: #d4edda; 
+            border: 1px solid #c3e6cb; 
+            border-radius: 6px; 
+            padding: 15px;
+            font-size: 14px;
+        """)
+        self.littles_results_label.setWordWrap(True)
+        littles_layout.addWidget(self.littles_results_label)
+        
+        # Verification chart
+        self.littles_view = QWebEngineView()
+        self.littles_view.setMinimumHeight(500)
+        littles_layout.addWidget(self.littles_view)
+        
+        self.tabs.addTab(littles_widget, '📐 Little\'s Law')
+    
+    def create_wellbeing_tab(self):
+        """Create wellbeing metrics tab (NEW)"""
+        wellbeing_widget = QWidget()
+        wellbeing_layout = QVBoxLayout(wellbeing_widget)
+        
+        # Explanation panel
+        explanation_group = QGroupBox("💚 Wellbeing Analysis Framework")
+        explanation_layout = QVBoxLayout(explanation_group)
+        
+        explanation_label = QLabel("""
+        <b>Customer Wellbeing:</b> Based on wait times and service quality<br>
+        <b>Staff Wellbeing:</b> Based on server utilization and workload balance<br>
+        <b>System Health:</b> Combined metric balancing both customer and staff outcomes<br><br>
+        <em>This analysis helps identify dispatch strategies that optimize both efficiency and human experience.</em>
+        """)
+        explanation_label.setStyleSheet("background: #e8f5e8; padding: 15px; border-radius: 6px; line-height: 1.4;")
+        explanation_label.setWordWrap(True)
+        explanation_layout.addWidget(explanation_label)
+        
+        wellbeing_layout.addWidget(explanation_group)
+        
+        # Wellbeing summary
+        self.wellbeing_summary_label = QLabel("Loading wellbeing analysis...")
+        self.wellbeing_summary_label.setStyleSheet("""
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 14px;
+        """)
+        self.wellbeing_summary_label.setWordWrap(True)
+        wellbeing_layout.addWidget(self.wellbeing_summary_label)
+        
+        # Recommendations panel
+        self.recommendations_group = QGroupBox("🚀 Wellbeing Improvement Recommendations")
+        self.recommendations_layout = QVBoxLayout(self.recommendations_group)
+        wellbeing_layout.addWidget(self.recommendations_group)
+        
+        # Wellbeing analysis chart
+        self.wellbeing_view = QWebEngineView()
+        self.wellbeing_view.setMinimumHeight(600)
+        wellbeing_layout.addWidget(self.wellbeing_view)
+        
+        self.tabs.addTab(wellbeing_widget, '💚 Wellbeing Metrics')
+    
+    def create_advanced_insights_tab(self):
+        """Create advanced insights and academic analysis tab (NEW)"""
+        insights_widget = QWidget()
+        insights_layout = QVBoxLayout(insights_widget)
+        
+        # Academic insights
+        academic_group = QGroupBox("🎓 Academic & Theoretical Insights")
+        academic_layout = QVBoxLayout(academic_group)
+        
+        academic_text = QTextEdit()
+        academic_text.setMaximumHeight(200)
+        academic_text.setStyleSheet("""
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+        """)
+        academic_text.setPlainText("""
+QUEUEING THEORY APPLICATION:
+
+1. Little's Law Verification demonstrates that our simulation accurately models 
+   real-world queueing behavior, validating the mathematical foundation.
+
+2. The wellbeing metrics showcase Operations Research principles applied to 
+   human-centered service optimization.
+
+3. Strategy comparison reveals trade-offs between efficiency (throughput) 
+   and fairness (wait time distribution).
+
+COMPUTER SCIENCE RELEVANCE:
+
+• Discrete Event Simulation modeling real-world systems
+• Database analytics for performance optimization  
+• Human-Computer Interaction considerations in system design
+• Statistical analysis for evidence-based decision making
+
+This project demonstrates advanced CS concepts: simulation, data analysis, 
+mathematical modeling, and human-centered system design.
+        """)
+        academic_layout.addWidget(academic_text)
+        
+        insights_layout.addWidget(academic_group)
+        
+        # Performance summary
+        performance_group = QGroupBox("📊 System Performance Summary")
+        performance_layout = QVBoxLayout(performance_group)
+        
+        self.performance_summary_label = QLabel("Loading performance summary...")
+        self.performance_summary_label.setStyleSheet("""
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 14px;
+        """)
+        self.performance_summary_label.setWordWrap(True)
+        performance_layout.addWidget(self.performance_summary_label)
+        
+        insights_layout.addWidget(performance_group)
+        
+        # Additional analytics charts
         self.util_view = QWebEngineView()
-        util_layout.addWidget(self.util_view)
-        
-        self.tabs.addTab(util_widget, '⚙️ Server Utilization')
-    
-    def create_waittime_tab(self):
-        """Create wait time distribution tab"""
-        wait_widget = QWidget()
-        wait_layout = QVBoxLayout(wait_widget)
+        self.util_view.setMaximumHeight(400)
+        insights_layout.addWidget(self.util_view)
         
         self.wait_view = QWebEngineView()
-        wait_layout.addWidget(self.wait_view)
+        self.wait_view.setMaximumHeight(400)
+        insights_layout.addWidget(self.wait_view)
         
-        self.tabs.addTab(wait_widget, '⏱️ Wait Times')
+        insights_layout.addStretch()
+        
+        self.tabs.addTab(insights_widget, '🎓 Advanced Insights')
+    
+    def create_kpi_card(self, kpi_name, kpi_data):
+        """Create enhanced KPI display card"""
+        card = QGroupBox()
+        card_layout = QVBoxLayout(card)
+        
+        # Status color mapping
+        status_colors = {
+            'EXCELLENT': '#28a745',
+            'OPTIMAL': '#28a745', 
+            'GOOD': '#17a2b8',
+            'MONITOR': '#ffc107',
+            'WARNING': '#fd7e14',
+            'CRITICAL': '#dc3545',
+            'INFO': '#6f42c1'
+        }
+        
+        status_color = status_colors.get(kpi_data.get('status', 'INFO'), '#6c757d')
+        
+        card.setStyleSheet(f"""
+            QGroupBox {{
+                background: white;
+                border: 2px solid {status_color};
+                border-radius: 10px;
+                margin: 5px;
+                padding: 15px;
+                max-width: 300px;
+                min-height: 120px;
+            }}
+            QGroupBox::title {{
+                color: {status_color};
+                font-weight: bold;
+                font-size: 14px;
+            }}
+        """)
+        
+        # KPI name as title
+        card.setTitle(kpi_name.replace('_', ' ').title())
+        
+        # Value display
+        value_label = QLabel(f"{kpi_data['value']} {kpi_data.get('unit', '')}")
+        value_label.setStyleSheet(f"color: {status_color}; font-size: 28px; font-weight: bold; margin: 10px 0;")
+        value_label.setAlignment(Qt.AlignCenter)
+        card_layout.addWidget(value_label)
+        
+        # Status and target
+        details_layout = QHBoxLayout()
+        
+        if kpi_data.get('status'):
+            status_label = QLabel(kpi_data['status'])
+            status_label.setStyleSheet(f"background: {status_color}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px;")
+            details_layout.addWidget(status_label)
+        
+        details_layout.addStretch()
+        
+        if kpi_data.get('target'):
+            target_label = QLabel(f"Target: {kpi_data['target']}")
+            target_label.setStyleSheet("font-size: 10px; color: #6c757d;")
+            details_layout.addWidget(target_label)
+        
+        card_layout.addLayout(details_layout)
+        
+        return card
     
     def load_analytics(self):
-        """Load analytics data from database and display"""
+        """Load all analytics data including new features"""
         try:
-            self.statusBar().showMessage('Loading analytics data...')
+            self.statusBar().showMessage('🔄 Loading analytics...')
             
             # Initialize dashboard
             self.dashboard = QueueAnalyticsDashboard(self.db_path)
             
-            # Load KPIs
+            # Load all analytics
             self.load_kpis()
+            self.load_trends()
+            self.load_strategy_analysis()
+            self.load_littles_law_analysis()     # NEW
+            self.load_wellbeing_analysis()       # NEW
+            self.load_advanced_insights()        # NEW
             
-            # Generate and load charts
-            self.load_charts()
-            
-            self.statusBar().showMessage('Analytics loaded successfully ✓')
+            self.statusBar().showMessage('✅ Analytics loaded successfully')
             
         except Exception as e:
-            self.statusBar().showMessage(f'Error loading analytics: {str(e)}')
+            self.statusBar().showMessage(f'❌ Error loading analytics: {str(e)}')
             QMessageBox.warning(self, 'Error', f'Failed to load analytics:\n{str(e)}')
     
     def load_kpis(self):
-        """Load and display KPI cards"""
+        """Load and display enhanced KPI cards"""
         # Clear existing KPIs
         for i in reversed(range(self.kpi_grid.count())): 
-            self.kpi_grid.itemAt(i).widget().setParent(None)
+            widget = self.kpi_grid.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
         
-        # Get KPI data
+        # Get enhanced KPI data
         kpis = self.dashboard.get_kpi_summary()
         
         # Create KPI cards
@@ -255,127 +492,180 @@ class AnalyticsWindow(QMainWindow):
                 col = 0
                 row += 1
     
-    def create_kpi_card(self, name, data):
-        """Create a single KPI card widget"""
-        card = QGroupBox()
-        
-        # Style based on status
-        status = data.get('status', '')
-        color_map = {
-            'EXCELLENT': '#48bb78',
-            'OPTIMAL': '#48bb78',
-            'GOOD': '#4299e1',
-            'MONITOR': '#ed8936',
-            'WARNING': '#f56565',
-            'CRITICAL': '#c53030'
-        }
-        color = color_map.get(status, '#667eea')
-        
-        card.setStyleSheet(f"""
-            QGroupBox {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                           stop:0 {color}, stop:1 {color}dd);
-                border-radius: 10px;
-                padding: 20px;
-                margin: 10px;
-            }}
-        """)
-        
-        layout = QVBoxLayout(card)
-        
-        # KPI Name
-        name_label = QLabel(name.replace('_', ' ').title())
-        name_label.setFont(QFont('Arial', 12, QFont.Bold))
-        name_label.setStyleSheet('color: white;')
-        name_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(name_label)
-        
-        # KPI Value
-        value_label = QLabel(f"{data['value']}{data.get('unit', '')}")
-        value_label.setFont(QFont('Arial', 32, QFont.Bold))
-        value_label.setStyleSheet('color: white;')
-        value_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(value_label)
-        
-        # Target (if exists)
-        if 'target' in data:
-            target_label = QLabel(f"Target: {data['target']}")
-            target_label.setFont(QFont('Arial', 10))
-            target_label.setStyleSheet('color: white;')
-            target_label.setAlignment(Qt.AlignCenter)
-            layout.addWidget(target_label)
-        
-        # Status
-        if status:
-            status_label = QLabel(status)
-            status_label.setFont(QFont('Arial', 11, QFont.Bold))
-            status_label.setStyleSheet('color: white; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 5px;')
-            status_label.setAlignment(Qt.AlignCenter)
-            layout.addWidget(status_label)
-        
-        card.setMinimumHeight(180)
-        return card
-    
-    def load_charts(self):
-        """Generate and load all charts"""
+    def load_trends(self):
+        """Load performance trends charts"""
         try:
-            # Performance Trends
+            # Performance trends
             fig = self.dashboard.plot_performance_trends()
             html_file = os.path.join(self.temp_dir, 'trends.html')
             fig.write_html(html_file)
             self.trends_view.setUrl(QUrl.fromLocalFile(html_file))
             
-            # Hourly Demand
+            # Hourly demand heatmap
             fig = self.dashboard.plot_hourly_heatmap()
             html_file = os.path.join(self.temp_dir, 'demand.html')
             fig.write_html(html_file)
             self.demand_view.setUrl(QUrl.fromLocalFile(html_file))
             
-            # Strategy Comparison
+        except Exception as e:
+            print(f"Error loading trends: {e}")
+    
+    def load_strategy_analysis(self):
+        """Load strategy comparison analysis"""
+        try:
             fig = self.dashboard.plot_strategy_comparison()
             html_file = os.path.join(self.temp_dir, 'strategy.html')
             fig.write_html(html_file)
             self.strategy_view.setUrl(QUrl.fromLocalFile(html_file))
             
-            # Server Utilization
+        except Exception as e:
+            print(f"Error loading strategy analysis: {e}")
+    
+    def load_littles_law_analysis(self):
+        """Load Little's Law verification analysis (NEW)"""
+        try:
+            verification = self.dashboard.verify_littles_law()
+            
+            # Update results label
+            if verification['status'] in ['NO_DATA', 'ERROR']:
+                self.littles_results_label.setText(f"⚠️ {verification['message']}")
+                self.littles_results_label.setStyleSheet("""
+                    background: #f8d7da; border: 1px solid #f5c6cb; 
+                    border-radius: 6px; padding: 15px; font-size: 14px;
+                """)
+            else:
+                status_emoji = {'EXCELLENT': '🎯', 'GOOD': '✅', 'ACCEPTABLE': '⚠️', 'POOR': '❌'}
+                emoji = status_emoji.get(verification['status'], '📊')
+                
+                self.littles_results_label.setText(f"""
+                {emoji} <b>Little's Law Verification: {verification['status']}</b><br>
+                📊 Average Error: {verification['avg_error_percentage']:.2f}%<br>
+                🏆 Most Accurate Strategy: {verification['best_strategy']}<br>
+                📈 Data Correlation: {verification['summary']['correlation']:.3f}<br>
+                📋 Simulations Analyzed: {verification['summary']['total_simulations']}
+                """)
+            
+            # Generate and load visualization
+            fig = self.dashboard.plot_littles_law_verification()
+            html_path = os.path.join(self.temp_dir, 'littles_law.html')
+            fig.write_html(html_path)
+            self.littles_view.load(QUrl.fromLocalFile(html_path))
+            
+        except Exception as e:
+            self.littles_results_label.setText(f"❌ Error loading Little's Law analysis: {str(e)}")
+    
+    def load_wellbeing_analysis(self):
+        """Load wellbeing metrics analysis (NEW)"""
+        try:
+            wellbeing = self.dashboard.calculate_wellbeing_metrics()
+            
+            if wellbeing['status'] in ['NO_DATA', 'ERROR']:
+                self.wellbeing_summary_label.setText(f"⚠️ {wellbeing['message']}")
+                return
+            
+            # Update summary
+            status_emoji = {'EXCELLENT': '🌟', 'GOOD': '👍', 'MODERATE': '⚠️', 'POOR': '🚨'}
+            emoji = status_emoji.get(wellbeing['status'], '📊')
+            
+            self.wellbeing_summary_label.setText(f"""
+            {emoji} <b>System Wellbeing: {wellbeing['status']}</b><br>
+            📊 Wellbeing Index: {wellbeing['metrics']['avg_wellbeing_index']:.1f}/100<br>
+            🏆 Best Overall Strategy: {wellbeing['metrics']['best_strategy_overall']}<br>
+            👥 Best for Customers: {wellbeing['metrics']['best_for_customers']}<br>
+            🧑‍💼 Best for Staff: {wellbeing['metrics']['best_for_staff']}<br>
+            🔗 Customer-Staff Correlation: {wellbeing['metrics']['customer_staff_correlation']:.3f}
+            """)
+            
+            # Update recommendations
+            for i in reversed(range(self.recommendations_layout.count())):
+                widget = self.recommendations_layout.itemAt(i).widget()
+                if widget:
+                    widget.setParent(None)
+            
+            for rec in wellbeing['recommendations']:
+                rec_label = QLabel(f"💡 {rec}")
+                rec_label.setStyleSheet("""
+                    background: #e8f5e8; border: 1px solid #c3e6cb; 
+                    border-radius: 4px; padding: 8px; margin: 2px;
+                """)
+                rec_label.setWordWrap(True)
+                self.recommendations_layout.addWidget(rec_label)
+            
+            # Generate visualization
+            fig = self.dashboard.plot_wellbeing_analysis()
+            html_path = os.path.join(self.temp_dir, 'wellbeing.html')
+            fig.write_html(html_path)
+            self.wellbeing_view.load(QUrl.fromLocalFile(html_path))
+            
+        except Exception as e:
+            self.wellbeing_summary_label.setText(f"❌ Error loading wellbeing analysis: {str(e)}")
+    
+    def load_advanced_insights(self):
+        """Load advanced insights analytics (NEW)"""
+        try:
+            # Load performance summary
+            kpis = self.dashboard.get_kpi_summary()
+            
+            summary_text = """
+            <b>📊 System Performance Overview:</b><br>
+            """
+            
+            if 'average_wait_time' in kpis:
+                summary_text += f"⏱️ Average Wait Time: {kpis['average_wait_time']['value']} {kpis['average_wait_time']['unit']}<br>"
+            
+            if 'server_utilization' in kpis:
+                summary_text += f"⚙️ Server Utilization: {kpis['server_utilization']['value']} {kpis['server_utilization']['unit']}<br>"
+            
+            if 'littles_law_verification' in kpis:
+                summary_text += f"📐 Little's Law Error: {kpis['littles_law_verification']['value']}<br>"
+            
+            if 'system_wellbeing_index' in kpis:
+                summary_text += f"💚 Wellbeing Index: {kpis['system_wellbeing_index']['value']}/100<br>"
+            
+            summary_text += "<br><i>These metrics demonstrate the system's effectiveness across multiple dimensions.</i>"
+            
+            self.performance_summary_label.setText(summary_text)
+            
+            # Load additional charts
             fig = self.dashboard.plot_utilization_vs_wait()
             html_file = os.path.join(self.temp_dir, 'utilization.html')
             fig.write_html(html_file)
             self.util_view.setUrl(QUrl.fromLocalFile(html_file))
             
-            # Wait Time Distribution
             fig = self.dashboard.plot_wait_time_histogram()
             html_file = os.path.join(self.temp_dir, 'waittime.html')
             fig.write_html(html_file)
             self.wait_view.setUrl(QUrl.fromLocalFile(html_file))
             
         except Exception as e:
-            print(f"Error loading charts: {e}")
+            self.performance_summary_label.setText(f"❌ Error loading advanced insights: {str(e)}")
     
     def export_analytics(self):
-        """Export all analytics to permanent files"""
+        """Export analytics report including new features"""
         try:
-            self.dashboard.export_all_analytics('analytics_output')
+            self.statusBar().showMessage('📊 Exporting analytics report...')
+            
+            output_dir = 'analytics_export'
+            self.dashboard.export_all_analytics(output_dir)
+            
             QMessageBox.information(
-                self, 
+                self,
                 'Export Complete',
-                'Analytics exported successfully!\n\nLocation: analytics_output/\n\nOpen master_dashboard.html to view all analytics.'
+                f'Analytics exported to: {output_dir}/\n\n' +
+                'Files generated:\n' +
+                '• performance_trends.html\n' +
+                '• strategy_comparison.html\n' +
+                '• littles_law_verification.html\n' +
+                '• wellbeing_analysis.html\n' +
+                '• enhanced_summary_report.html\n\n' +
+                'Open enhanced_summary_report.html to view the complete analysis.'
             )
-        except Exception as e:
-            QMessageBox.critical(self, 'Export Error', f'Failed to export:\n{str(e)}')
-    
-    def open_in_browser(self):
-        """Open master dashboard in web browser"""
-        try:
-            import webbrowser
-            dashboard_path = os.path.join(self.temp_dir, 'dashboard.html')
             
-            # Generate master dashboard
-            self.dashboard.export_all_analytics(self.temp_dir)
-            webbrowser.open(f'file://{dashboard_path}')
+            self.statusBar().showMessage('✅ Analytics export complete')
             
         except Exception as e:
-            QMessageBox.warning(self, 'Error', f'Could not open browser:\n{str(e)}')
+            QMessageBox.critical(self, 'Export Error', f'Failed to export analytics:\n{str(e)}')
+            self.statusBar().showMessage('❌ Export failed')
     
     def closeEvent(self, event):
         """Clean up when window is closed"""
@@ -389,43 +679,29 @@ class AnalyticsWindow(QMainWindow):
         except:
             pass
         
-        event.accept()
+        super().closeEvent(event)
 
 
-# ==================== INTEGRATION WITH MAIN UI ====================
-
+# ==================== INTEGRATION HELPER ====================
 def add_analytics_to_main_ui(main_window):
     """
-    Function to add analytics button/menu to existing main UI
-    
-    Usage in your main.py:
-        from analytics_ui import add_analytics_to_main_ui
-        add_analytics_to_main_ui(self)  # 'self' is your main window
+    Function to add analytics button to existing main UI
+    Call this from your mainGui.py to integrate the analytics
     """
     
-    # Option 1: Add to menu bar
-    if hasattr(main_window, 'menuBar'):
-        analytics_menu = main_window.menuBar().addMenu('Analytics')
-        
-        open_dashboard_action = analytics_menu.addAction('📊 Open Analytics Dashboard')
-        open_dashboard_action.triggered.connect(lambda: open_analytics_window(main_window))
-        
-        export_action = analytics_menu.addAction('💾 Export Analytics Report')
-        export_action.triggered.connect(lambda: export_analytics_quick(main_window))
-    
-    # Option 2: Add button to toolbar/layout
+    # Add analytics button to toolbar/menu
     if hasattr(main_window, 'toolbar'):
-        analytics_btn = QPushButton('📊 Analytics')
+        analytics_btn = QPushButton('📊 Analytics Dashboard')
         analytics_btn.setStyleSheet("""
             QPushButton {
-                background: #667eea;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 padding: 10px 20px;
                 border-radius: 5px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background: #764ba2;
+                background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%);
             }
         """)
         analytics_btn.clicked.connect(lambda: open_analytics_window(main_window))
@@ -449,7 +725,7 @@ def export_analytics_quick(parent, db_path='queue_analysis.db'):
         QMessageBox.information(
             parent,
             'Export Complete',
-            'Analytics exported to: analytics_output/\n\nOpen master_dashboard.html to view.'
+            'Analytics exported to: analytics_output/\n\nOpen enhanced_summary_report.html to view.'
         )
     except Exception as e:
         QMessageBox.critical(parent, 'Export Error', f'Failed to export:\n{str(e)}')
