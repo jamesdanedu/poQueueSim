@@ -4,7 +4,6 @@ Provides advanced data analysis and visualization for the Queue Management Syste
 Uses SQLite database queries to generate insights and performance metrics
 Database: poQueueSim.db
 
-UPDATED: Now includes Little's Law verification and wellbeing metrics
 """
 
 import sqlite3
